@@ -1,0 +1,336 @@
+<?php
+
+namespace App\Http\Controllers\Admin;
+
+// use App\Models\Admin\Dashboard;
+use Illuminate\Http\Request;
+use App\Http\Controllers\Controller;
+use App\Models\Admin\BusType;
+use App\Models\Admin\CustomerData;
+use App\Models\Reservation;
+use App\Models\Admin\Schedule;
+use App\Models\Admin\Roles;
+use Carbon\Carbon;
+use Illuminate\Support\Facades\DB;
+use Barryvdh\DomPDF\Facade\Pdf;
+
+
+class DashboardController extends Controller
+{
+    /**
+     * Display a listing of the resource.
+     *
+     * @return \Illuminate\Http\Response
+     */
+    public function index()
+    {
+        // Basic counts
+        $totalCustomer = CustomerData::count();
+        $totalReservation = Reservation::count();
+        $totalBus = BusType::count();
+        $totalSchedule = Schedule::count();
+        $totalRoles = Roles::count();
+
+        // Bus data statistics
+        $busTypes = BusType::select('type', 'seat_capacity', 'price')
+            ->withCount(['schedules' => function ($query) {
+                $query->where('unit_available', '>', 0);
+            }])
+            ->get();
+
+        $totalSeatCapacity = BusType::sum('seat_capacity');
+        $averagePrice = BusType::avg('price');
+
+        // Customer data statistics
+        $recentCustomers = CustomerData::latest('created_at')->take(5)->get();
+
+        // Reservation capacity and statistics
+        $totalReservedSeats = Reservation::sum('number_of_seats');
+        $reservationCapacity = $totalSeatCapacity - $totalReservedSeats;
+        $reservationPercentage = $totalSeatCapacity > 0 ? round(($totalReservedSeats / $totalSeatCapacity) * 100, 2) : 0;
+
+       $recentReservations = Reservation::with('user')
+        ->latest('created_at')
+        ->take(5)
+        ->get();
+
+
+        $reservationsByStatus = Reservation::selectRaw('payment_status, COUNT(*) as count')
+            ->groupBy('payment_status')
+            ->get();
+
+        // Schedule statistics
+        $activeSchedules = Schedule::where('unit_available', '>', 0)->count();
+
+        // Revenue statistics
+        $totalRevenue = Reservation::where('payment_status', 'paid')->sum('payment');
+        $monthlyRevenue = Reservation::selectRaw('DAY(payment_date) as day, SUM(payment) as revenue')
+            ->where('payment_status', 'paid')
+            ->whereMonth('payment_date', date('m'))
+            ->whereYear('payment_date', date('Y'))
+            ->groupBy('day')
+            ->orderBy('day')
+            ->get();
+
+        // Top routes
+        $topRoutes = Schedule::selectRaw('initial_route, destination_route, COUNT(*) as schedule_count')
+            ->groupBy('initial_route', 'destination_route')
+            ->orderByDesc('schedule_count')
+            ->take(5)
+            ->get();
+
+        // Bus utilization
+        $busUtilization = BusType::withCount(['schedules' => function ($query) {
+            $query->where('unit_available', '>', 0);
+        }])
+            ->withCount(['schedules' => function ($query) {
+                $query->where('unit_available', '=', 0);
+            }])
+            ->get()
+            ->map(function ($bus) {
+                $totalSchedules = $bus->schedules_count + $bus->schedules_count;
+                $utilization = $totalSchedules > 0 ? round(($bus->schedules_count / $totalSchedules) * 100, 2) : 0;
+                return [
+                    'type' => $bus->type,
+                    'utilization' => $utilization,
+                    'active_schedules' => $bus->schedules_count,
+                    'total_schedules' => $totalSchedules
+                ];
+            });
+
+        return view('Admin.dashboard', compact(
+            'totalCustomer',
+            'totalReservation',
+            'totalBus',
+            'totalSchedule',
+            'totalRoles',
+            'busTypes',
+            'totalSeatCapacity',
+            'averagePrice',
+            'recentCustomers',
+            'totalReservedSeats',
+            'reservationCapacity',
+            'reservationPercentage',
+            'recentReservations',
+            'reservationsByStatus',
+            'activeSchedules',
+            'totalRevenue',
+            'monthlyRevenue',
+            'topRoutes',
+            'busUtilization'
+        ));
+    }
+
+    /**
+     * Show the form for creating a new resource.
+     *
+     * @return \Illuminate\Http\Response
+     */
+    public function create()
+    {
+        //
+    }
+
+    /**
+     * Store a newly created resource in storage.
+     *
+     * @param  \Illuminate\Http\Request  $request
+     * @return \Illuminate\Http\Response
+     */
+    public function store(Request $request)
+    {
+        //
+    }
+
+    /**
+     * Display the specified resource.
+     *
+     * @param  int  $id
+     * @return \Illuminate\Http\Response
+     */
+    public function show($id)
+    {
+        // $dashboard = Dashboard::find($id);
+        // return $dashboard;
+    }
+
+    /**
+     * Show the form for editing the specified resource.
+     *
+     * @param  int  $id
+     * @return \Illuminate\Http\Response
+     */
+    public function edit($id)
+    {
+        //
+    }
+
+    /**
+     * Update the specified resource in storage.
+     *
+     * @param  \Illuminate\Http\Request  $request
+     * @param  int  $id
+     * @return \Illuminate\Http\Response
+     */
+    public function update(Request $request, $id)
+    {
+        //
+    }
+
+    /**
+     * Remove the specified resource from storage.
+     *
+     * @param  int  $id
+     * @return \Illuminate\Http\Response
+     */
+    public function destroy($id)
+    {
+        //
+    }
+
+    /**
+     * Generate comprehensive dashboard report
+     *
+     * @param  \Illuminate\Http\Request  $request
+     * @return \Illuminate\Http\Response
+     */
+    public function generateReport(Request $request)
+    {
+        try {
+            $reportType = $request->get('type', 'monthly');
+            $dateFrom = Carbon::now()->startOfMonth();
+            $dateTo = Carbon::now()->endOfMonth();
+
+            // Get monthly data for the report
+            $totalCustomer = CustomerData::whereBetween('created_at', [$dateFrom, $dateTo])->count();
+            $totalReservation = Reservation::whereBetween('created_at', [$dateFrom, $dateTo])->count();
+            $totalBus = BusType::count();
+            $totalSchedule = Schedule::whereBetween('created_at', [$dateFrom, $dateTo])->count();
+
+            // Bus data statistics
+            $busTypes = BusType::select('type', 'seat_capacity', 'price')
+                ->withCount(['schedules' => function ($query) use ($dateFrom, $dateTo) {
+                    $query->whereBetween('created_at', [$dateFrom, $dateTo])
+                        ->where('unit_available', '>', 0);
+                }])
+                ->get();
+
+            $totalSeatCapacity = BusType::sum('seat_capacity');
+            $averagePrice = BusType::avg('price');
+
+            // Customer data statistics for current month
+            $customersByMonth = CustomerData::selectRaw('DAY(created_at) as day, COUNT(*) as count')
+                ->whereBetween('created_at', [$dateFrom, $dateTo])
+                ->groupBy('day')
+                ->orderBy('day')
+                ->get();
+
+            // Reservation capacity and statistics for current month
+            $totalReservedSeats = Reservation::whereBetween('created_at', [$dateFrom, $dateTo])->sum('number_of_seats');
+            $reservationCapacity = $totalSeatCapacity - $totalReservedSeats;
+            $reservationPercentage = $totalSeatCapacity > 0 ? round(($totalReservedSeats / $totalSeatCapacity) * 100, 2) : 0;
+
+            $reservationsByStatus = Reservation::selectRaw('payment_status, COUNT(*) as count')
+                ->whereBetween('created_at', [$dateFrom, $dateTo])
+                ->groupBy('payment_status')
+                ->get();
+
+            // Schedule statistics for current month
+            $activeSchedules = Schedule::whereBetween('created_at', [$dateFrom, $dateTo])
+                ->where('unit_available', '>', 0)->count();
+            $totalRoutes = Schedule::selectRaw('COUNT(DISTINCT CONCAT(initial_route, "-", destination_route)) as route_count')
+                ->whereBetween('created_at', [$dateFrom, $dateTo])
+                ->first();
+
+            // Revenue statistics for current month
+            $totalRevenue = Reservation::where('payment_status', 'paid')
+                ->whereBetween('payment_date', [$dateFrom, $dateTo])
+                ->sum('payment');
+            $monthlyRevenue = Reservation::selectRaw('DAY(payment_date) as day, SUM(payment) as revenue')
+                ->where('payment_status', 'paid')
+                ->whereBetween('payment_date', [$dateFrom, $dateTo])
+                ->groupBy('day')
+                ->orderBy('day')
+                ->get();
+
+            // Top routes for current month
+            $topRoutes = Schedule::selectRaw('initial_route, destination_route, COUNT(*) as schedule_count')
+                ->whereBetween('created_at', [$dateFrom, $dateTo])
+                ->groupBy('initial_route', 'destination_route')
+                ->orderByDesc('schedule_count')
+                ->take(10)
+                ->get();
+
+            // Recent activities for current month
+            $recentCustomers = CustomerData::whereBetween('created_at', [$dateFrom, $dateTo])
+                ->latest('created_at')->take(10)->get();
+            $recentReservations = Reservation::with('user')
+            ->whereBetween('created_at', [$dateFrom, $dateTo])
+            ->latest('created_at')
+            ->take(10)
+            ->get();
+
+
+            // Generate PDF report using new template
+            $pdf = PDF::loadView('reports.monthly', compact(
+                'reportType',
+                'dateFrom',
+                'dateTo',
+                'totalCustomer',
+                'totalReservation',
+                'totalBus',
+                'totalSchedule',
+                'busTypes',
+                'totalSeatCapacity',
+                'averagePrice',
+                'customersByMonth',
+                'totalReservedSeats',
+                'reservationCapacity',
+                'reservationPercentage',
+                'reservationsByStatus',
+                'activeSchedules',
+                'totalRoutes',
+                'totalRevenue',
+                'monthlyRevenue',
+                'topRoutes',
+                'recentCustomers',
+                'recentReservations'
+            ));
+
+            // Create filename with month and year in Indonesian
+            $monthNames = [
+                1 => 'Januari',
+                2 => 'Februari',
+                3 => 'Maret',
+                4 => 'April',
+                5 => 'Mei',
+                6 => 'Juni',
+                7 => 'Juli',
+                8 => 'Agustus',
+                9 => 'September',
+                10 => 'Oktober',
+                11 => 'November',
+                12 => 'Desember'
+            ];
+            $monthName = $monthNames[$dateFrom->format('n')];
+            $filename = 'Laporan-Bulanan-' . $monthName . '-' . $dateFrom->format('Y') . '.pdf';
+            $filepath = 'reports/' . $filename;
+
+            // Save PDF to storage
+            $pdf->save(storage_path('app/public/' . $filepath));
+
+            // Return success response with download link
+            return response()->json([
+                'success' => true,
+                'message' => 'Laporan bulanan berhasil dibuat!',
+                'download_url' => asset('storage/' . $filepath),
+                'filename' => $filename
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Terjadi kesalahan saat membuat laporan: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+}
