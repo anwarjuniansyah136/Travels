@@ -35,7 +35,6 @@
                             <th>Durasi Reservasi</th>
                             <th>Tanggal Bayar</th>
                             <th>Jumlah Pembayaran</th>
-                            <th>Metode Pembayaran</th>
                             <th>Status Pembayaran</th>
                             {{-- <th>Aksi</th> --}}
                           </tr>
@@ -57,7 +56,6 @@
                                 <td>{{ $value->reservation_duration }}</td>
                                 <td>{{ $value->payment_date }}</td>
                                 <td>{{ $value->payment }}</td>
-                                <td>{{ $value->set_payment_method }}</td>
                                 <td>
                                 <form action="{{ route('reservation.updateStatus', $value->id) }}" method="POST" style="display:inline;">
                                     @csrf
@@ -71,9 +69,9 @@
                                             class="btn btn-sm {{ $value->payment_status === 'canceled' ? 'btn-danger' : 'btn-outline-danger' }}">
                                             Canceled
                                         </button>
-                                        <button type="submit" name="status" value="refund" 
-                                            class="btn btn-sm {{ $value->payment_status === 'refund' ? 'btn-warning' : 'btn-outline-warning' }}">
-                                            Refund
+                                        <button type="submit" name="status" value="pending" 
+                                            class="btn btn-sm {{ $value->payment_status === 'pending' ? 'btn-warning' : 'btn-outline-warning' }}">
+                                            Pending
                                         </button>
                                     </div>
                                 </form>

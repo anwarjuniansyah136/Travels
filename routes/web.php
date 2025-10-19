@@ -19,6 +19,7 @@ use App\Http\Controllers\PelangganController;
 use App\Http\Controllers\Pelanggan\BusController;
 use App\Http\Controllers\Pelanggan\ReservasiController;
 use App\Http\Controllers\Pelanggan\PembayaranController;
+use App\Http\Controllers\Pelanggan\TransactionsController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -59,7 +60,7 @@ Route::middleware(['guest'])->group(function () {
     Route::post('/login', [SesiController::class, 'login']);
 });
 
-Route::get('/register', [RegisterController::class, 'showRegistrationForm'])->name('register');
+// Route::get('/register', [RegisterController::class, 'showRegistrationForm'])->name('register');
 Route::post('/register', [RegisterController::class, 'register'])->name('register.post');
 
 
@@ -107,7 +108,7 @@ Route::post('customer_data', [CustomerDataController::class, 'store'])->name('cu
 Route::post('customer', [CustomerDataController::class, 'store'])->name('customer.store');
 
 //Data Reservasi 
-Route::get('/reservation', [ReservationController::class, 'index']);
+Route::get('/reservation', [ReservationController::class, 'index'])->name('admin.reservation.index');
 Route::get('/reservation/search', [ReservationController::class, 'search'])->name('reservation.search');
 Route::get('/reservation/{id}', [ReservationController::class, 'show']);
 Route::get('/reservasi/create', [ReservationController::class, 'create'])->name('reservation.create');
@@ -181,9 +182,7 @@ Route::get('forgot', function () {
     return view('forgot');
 });
 
-Route::get('register', function () {
-    return view('admin.register');
-});
+Route::get('/register', [RegisterController::class, 'registerForm'])->name('register');
 
 Route::get('busType', function () {
     return view('busType');
@@ -192,10 +191,17 @@ Route::get('busType', function () {
 
 // Pelanggan reservasi
 // Route::get('/reservasi', [ReservasiController::class, 'create'])->name('pelanggan.reservation.create');
-Route::get('/reservasi', [ReservasiController::class, 'create'])->name('pelanggan.reservation.create');
-Route::post('/reservasi', [ReservasiController::class, 'store'])->name('pelanggan.reservation.store');
-Route::get('/reservasi-saya', [ReservasiController::class, 'index'])->name('pelanggan.reservation.index');
-Route::get('/reservasi/{id}', [ReservasiController::class, 'show'])->name('pelanggan.reservation.show');
-Route::get('/pelanggan/reservation/transaction/{id}', [ReservasiController::class, 'transaction'])->name('pelanggan.reservation.transaction');
-Route::get('/pelanggan/reservasi/payment/{id}', [ReservasiController::class, 'pay'])
-    ->name('pelanggan.reservation.payment');
+Route::middleware(['auth'])->group(function () {
+    Route::get('/reservasi', [ReservasiController::class, 'create'])->name('pelanggan.reservation.create');
+    Route::post('/reservasi', [ReservasiController::class, 'store'])->name('pelanggan.reservation.store');
+    Route::get('/reservasi-saya', [ReservasiController::class, 'index'])->name('pelanggan.reservation.index');
+    Route::get('/reservasi/{id}', [ReservasiController::class, 'show'])->name('pelanggan.reservation.show');
+    Route::get('/pelanggan/reservation/transaction/{id}', [ReservasiController::class, 'transaction'])->name('pelanggan.reservation.transaction');
+    Route::get('/pelanggan/reservasi/payment/{id}', [ReservasiController::class, 'pay'])
+        ->name('pelanggan.reservation.payment');
+});
+
+Route::middleware(['auth']) -> group(function() {
+    Route::get('/transaction', [TransactionsController::class, 'index'])->name('pelanggan.transaction.index');
+    Route::put('/transaction/delete/{id}', [TransactionsController::class, 'delete'])->name('pelanggan.transaction.delete');
+});

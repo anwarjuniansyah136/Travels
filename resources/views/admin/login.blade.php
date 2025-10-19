@@ -41,6 +41,12 @@
             margin: 20px auto;
             display: block;
         }
+
+        .register-link {
+            margin-top: 10px;
+            display: block;
+            text-align: center;
+        }
     </style>
 </head>
 <body>
@@ -94,9 +100,11 @@
 
                         <button type="submit" class="btn btn-yora btn-block mb-3">Masuk</button>
 
-                        {{-- <div class="d-flex justify-content-between text-sm">
-                            <a class="small text-muted" href="{{ route('register') }}">Belum Memiliki Akun? Buat Akun</a>
-                        </div> --}}
+                        <!-- Link ke Register -->
+                        <div class="register-link">
+                            <span class="text-muted">Belum punya akun?</span>
+                            <a href="{{ route('register') }}" class="font-weight-bold">Daftar Sekarang</a>
+                        </div>
                     </form>
                 </div>
             </div>

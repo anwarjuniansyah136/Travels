@@ -153,8 +153,17 @@
           <ul class="navbar-nav ms-auto">
             <li class="nav-item"><a href="{{ route('homepage') }}" class="nav-link active">Beranda</a></li>
             <li class="nav-item"><a href="/reservasi" class="nav-link">Reservasi</a></li>
-            {{-- <li class="nav-item"><a href="/pembayaran" class="nav-link">Pembayaran</a></li> --}}
+            <li class="nav-item"><a href="/transaction" class="nav-link">Transaksi</a></li>
           </ul>
+          @auth
+          <ul class="navbar-nav ms-auto align-items-center">
+            <li class="nav-item">
+              <a href="/logout" class="nav-link">
+                Logout
+              </a>
+            </li>
+          </ul>
+          @endauth
         </div>
       </div>
     </nav>

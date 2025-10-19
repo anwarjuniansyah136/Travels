@@ -57,6 +57,7 @@
         footer a:hover {
             color: var(--accent-color);
         }
+        
     </style>
 
     @stack('styles')
@@ -75,7 +76,14 @@
                 <ul class="navbar-nav ms-auto">
                     <li class="nav-item"><a href="/homepage" class="nav-link">Beranda</a></li>
                     <li class="nav-item"><a href="/reservasi" class="nav-link">Reservasi</a></li>
-                    {{-- <li class="nav-item"><a href="/pembayaran" class="nav-link">Pembayaran</a></li> --}}
+                    <li class="nav-item"><a href="/transaction" class="nav-link">Transaksi</a></li>
+                    @auth
+                    <li class="nav-item">
+                    <a href="/logout" class="nav-link">
+                        Logout
+                    </a>
+                    </li>
+                    @endauth
                 </ul>
             </div>
         </div>

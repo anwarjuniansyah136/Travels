@@ -8,6 +8,8 @@ use App\Models\Reservation;
 use Illuminate\Http\Request;
 use Midtrans\Config;
 use Midtrans\Snap;
+use Illuminate\Support\Facades\Auth;
+use \Carbon\Carbon;
 
 class ReservasiController extends Controller
 {
@@ -21,8 +23,8 @@ class ReservasiController extends Controller
     public function create()
     {
         $bus = BusType::all();
-
-        return view('pelanggan.reservation.create', compact('bus'));
+        $user = Auth::user();
+        return view('pelanggan.reservation.create', compact('bus','user'));
     }
 
     public function store(Request $request)
@@ -40,8 +42,16 @@ class ReservasiController extends Controller
         $total_harga = $bus->price * $validated['number_of_seats'];
         
         $validated['payment'] = $total_harga;
+        $validated['schedule_id'] = rand(1,100);
+
+        // $start = Carbon::parse($request->tanggal_berangkat);
+        // $end = Carbon::parse($request->tanggal_pulang);
+        // $validated['reservation_duration'] = $start->diffInDays($end) + 1;
+        // $reservation->reservation_duration = $start->diffInDays($end) + 1;
 
         $validated['payment_status'] = 'pending';
+
+        
 
         $reservation = Reservation::create($validated);
 

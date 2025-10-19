@@ -12,11 +12,11 @@
             <div class="row mb-3">
                 <div class="col-md-6 mb-3 mb-md-0">
                     <label for="nama_lengkap" class="form-label fw-semibold">Nama Lengkap</label>
-                    <input type="text" name="nama_lengkap" class="form-control" placeholder="Masukkan nama lengkap" required>
+                    <input type="text" name="nama_lengkap" class="form-control"  value="{{ $user->name }}" readonly>
                 </div>
                 <div class="col-md-6">
                     <label for="email" class="form-label fw-semibold">Email</label>
-                    <input type="email" name="email" class="form-control" placeholder="Masukkan email" required>
+                    <input type="text" name="email" class="form-control"  value="{{ $user->email }}" readonly>
                 </div>
             </div>
 

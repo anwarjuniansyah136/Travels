@@ -3,9 +3,9 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Models\Admin\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
-use App\Models\Admin\User;
 
 class RegisterController extends Controller
 {
@@ -14,18 +14,22 @@ class RegisterController extends Controller
         return view('Admin.auth.register');
     }
 
+    public function registerForm()
+    {
+        return view('admin.register');
+    }
+
     public function register(Request $request)
     {
         $request->validate([
-            'first_name' => 'required|string|max:50',
-            'last_name'  => 'required|string|max:50',
-            'email'      => 'required|email|unique:users,email',
-            'password'   => 'required|min:6|confirmed',
+            'name' => 'required|string|max:255',
+            'email' => 'required|email|unique:users,email',
+            'password' => 'required|confirmed|min:8',
         ]);
 
         User::create([
-            'name'     => $request->first_name . ' ' . $request->last_name,
-            'email'    => $request->email,
+            'name' => $request->name,
+            'email' => $request->email,
             'password' => Hash::make($request->password),
         ]);
 

@@ -37,7 +37,7 @@ class SesiController extends Controller
             if (Auth::user()->role === 'admin') {
                 return redirect()->route('dashboard');
             } elseif (Auth::user()->role === 'customer') {
-                return redirect()->route('customer.reservation'); // pastikan route ini ada
+                return redirect()->route('homepage'); // pastikan route ini ada
             } else {
                 Auth::logout();
                 return back()->withErrors('Role user tidak dikenali');
@@ -71,10 +71,9 @@ class SesiController extends Controller
             'name' => $request->name,
             'email' => $request->email,
             'password' => Hash::make($request->password),
-            'role' => 'customer', // default role jika register pelanggan
+            'role' => 'customer',
         ]);
 
-        // Login otomatis setelah register
         Auth::login($user);
 
         return redirect()->route('dashboard'); // atau redirect ke halaman customer jika role customer

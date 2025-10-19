@@ -10,25 +10,39 @@ class ReservationController extends Controller
 {
     public function index()
     {
-        $reservations = Reservation::with('user')->latest()->get();
-        return view('admin.reservation.index', compact('reservations'));
+        $query = Reservation::query();
+
+        if (request()->filled('search')) { // <-- pakai helper global
+            $search = request('search');
+            $query->where(function ($q) use ($search) {
+                $q->where('nama_lengkap', 'like', "%$search%")
+                    ->orWhere('email', 'like', "%$search%")
+                    ->orWhere('nomor_telepon', 'like', "%$search%");
+            });
+
+        }
+
+        $data = $query->orderBy('reservation_date', 'desc')->paginate(10);
+        
+        return view('admin.reservation', compact('data'));
     }
 
     public function show($id)
     {
         $reservation = Reservation::with('user')->findOrFail($id);
+
         return view('admin.reservation.show', compact('reservation'));
     }
 
     public function updateStatus(Request $request, $id)
     {
         $request->validate([
-            'payment_status' => 'required|string'
+            'payment_status' => 'required|string',
         ]);
 
         $reservation = Reservation::findOrFail($id);
         $reservation->update([
-            'payment_status' => $request->payment_status
+            'payment_status' => $request->payment_status,
         ]);
 
         return redirect()->route('admin.reservation.index')->with('success', 'Status pembayaran berhasil diperbarui.');

@@ -13,50 +13,80 @@
 
     <style>
         body {
-            background-color: #f4f6fa;
+            background-color: #f5f6fa;
+            font-family: 'Nunito', sans-serif;
         }
-        .card {
+
+        .card-register {
             border: none;
-            border-radius: .75rem;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            border-radius: 1rem;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+            padding: 2rem;
         }
+
         .btn-custom {
-            background-color: #b30000;
-            border: none;
-            color: white;
+            background-color: #a40000;
+            color: #fff;
             font-weight: bold;
         }
+
         .btn-custom:hover {
-            background-color: #8b0000;
+            background-color: #880000;
         }
-        .logo {
+
+        .logo-circle {
             width: 80px;
             height: 80px;
-            margin-bottom: 15px;
+            object-fit: cover;
+            border-radius: 50%;
+            margin-bottom: 20px;
+        }
+
+        .form-group input {
+            border-radius: .5rem;
+        }
+
+        .text-center a {
+            color: #a40000;
+            font-weight: bold;
+            text-decoration: none;
+        }
+
+        .text-center a:hover {
+            color: #880000;
         }
     </style>
 </head>
 <body>
 
 <div class="container d-flex justify-content-center align-items-center" style="min-height: 100vh;">
-    <div class="card p-4" style="width: 100%; max-width: 450px;">
+    <div class="card card-register" style="width: 100%; max-width: 450px;">
         <div class="text-center">
-          <img src="{{ asset('Admin/img/yoraTrans.jpg') }}" alt="Yora Logo" style="width:80px; height:80px; border-radius:50%; object-fit:cover; margin-bottom:15px;">
-
-            <h4 class="mb-3">Create an Account!</h4>
+            <img src="{{ asset('Admin/img/yoraTrans.jpg') }}" alt="Yora Logo" class="logo-circle">
+            <h4 class="mb-3 font-weight-bold text-dark">Create an Account</h4>
         </div>
-        <form class="user" method="POST" action="{{ route('register.post') }}">
+
+        @if($errors->any())
+            <div class="alert alert-danger">
+                <ul class="mb-0">
+                    @foreach($errors->all() as $item)
+                        <li>{{ $item }}</li>
+                    @endforeach
+                </ul>
+            </div>
+        @endif
+
+        <form method="POST" action="{{ route('register.post') }}">
             @csrf
-        
-            <div class="form-group row">
-                <div class="col-sm-6 mb-3 mb-sm-0">
-                    <input type="text" name="Name" class="form-control" placeholder="Name" required>
-                </div>
-        
+
+            <div class="form-group">
+                <input type="text" name="name" class="form-control" placeholder="Full Name" required>
+            </div>
+
             <div class="form-group">
                 <input type="email" name="email" class="form-control" placeholder="Email Address" required>
             </div>
-        
+
             <div class="form-group row">
                 <div class="col-sm-6 mb-3 mb-sm-0">
                     <input type="password" name="password" class="form-control" placeholder="Password" required>
@@ -65,12 +95,13 @@
                     <input type="password" name="password_confirmation" class="form-control" placeholder="Repeat Password" required>
                 </div>
             </div>
-        
+
             <button type="submit" class="btn btn-custom btn-block">Register Account</button>
         </form>
-        
+
         <div class="mt-3 text-center">
-            <a href="/" class="small">Login</a>
+            <span class="text-muted">Already have an account?</span>
+            <a href="{{ route('login') }}">Login</a>
         </div>
     </div>
 </div>

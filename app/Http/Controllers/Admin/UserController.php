@@ -33,7 +33,7 @@ class UserController extends Controller
         $user->name = $request->name;
         $user->email = $request->email;
         $user->password= $request->password;
-        $user->role_id = $request->role_id;
+        $user->role_id = 'customer';
         $user->save();
         return $user;
     }
@@ -57,7 +57,7 @@ class UserController extends Controller
         $user->name = $request->name;
         $user->email = $request->email;
         $user->password = bcrypt($request->password);
-        $user->role_id = $request->role_id;
+        $user->role_id = 'customer';
         $user->save();
 
         return redirect()->route('user.index')->with('success', 'user berhasil ditambahkan');
