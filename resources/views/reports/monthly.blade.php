@@ -316,12 +316,12 @@
                     </td>
                     <td class="text-center">{{ $status->count }}</td>
                     <td class="text-right currency">
-                        @php
-                            $statusRevenue = \App\Models\Admin\Reservation::where('payment_status', $status->payment_status)
+                        {{-- @php
+                            $statusRevenue = \app\Models\Admin\Reservation::where('payment_status', $status->payment_status)
                                 ->whereBetween('created_at', [$dateFrom, $dateTo])
                                 ->sum('payment');
-                        @endphp
-                        Rp {{ number_format($statusRevenue, 0, ',', '.') }}
+                        @endphp --}}
+                        {{-- Rp {{ number_format($statusRevenue, 0, ',', '.') }} --}}
                     </td>
                 </tr>
                 @empty
@@ -375,14 +375,14 @@
                 <tr>
                     <td>{{ $revenue->day }} {{ $dateFrom->format('F Y') }}</td>
                     <td class="text-center">
-                        @php
+                        {{-- @php
                             $dailyTransactions = \App\Models\Admin\Reservation::where('payment_status', 'paid')
                                 ->whereDay('payment_date', $revenue->day)
                                 ->whereMonth('payment_date', $dateFrom->format('m'))
                                 ->whereYear('payment_date', $dateFrom->format('Y'))
                                 ->count();
-                        @endphp
-                        {{ $dailyTransactions }}
+                        @endphp --}}
+                        {{-- {{ $dailyTransactions }} --}}
                     </td>
                     <td class="text-right currency">Rp {{ number_format($revenue->revenue, 0, ',', '.') }}</td>
                 </tr>

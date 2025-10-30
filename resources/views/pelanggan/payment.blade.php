@@ -28,7 +28,7 @@
                         </li>
                         <li class="list-group-item d-flex justify-content-between">
                             <span>Total Harga</span>
-                            <strong>Rp {{ number_format($reservation->payment, 0, ',', '.') }}</strong>
+                            <strong>Rp {{$reservation->payment}}</strong>
                         </li>
                     </ul>
 
@@ -48,10 +48,9 @@
     </div>
 </div>
 
-<!-- Midtrans Snap JS -->
 <script type="text/javascript"
     src="https://app.sandbox.midtrans.com/snap/snap.js"
-    data-client-key="{{ config('midtrans.client_key') }}">
+    data-client-key="{{ config('mitrands.client_key') }}">
 </script>
 
 <script type="text/javascript">
@@ -59,7 +58,7 @@ document.getElementById('pay-button').addEventListener('click', function () {
     window.snap.pay('{{ $snapToken }}', {
         onSuccess: function(result){
             alert("Pembayaran sukses!");
-            window.location.href = "/reservasi/success";
+            window.location.href = "/pelanggan/reservasi/invoice/{{ $reservation->id }}";
         },
         onPending: function(result){
             alert("Menunggu pembayaran");

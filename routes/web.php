@@ -21,6 +21,7 @@ use App\Http\Controllers\Pelanggan\ReservasiController;
 use App\Http\Controllers\Pelanggan\PembayaranController;
 use App\Http\Controllers\Pelanggan\TransactionsController;
 use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\Pelanggan\MidtranController;
 
 /*
 |--------------------------------------------------------------------------
@@ -197,8 +198,8 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/reservasi-saya', [ReservasiController::class, 'index'])->name('pelanggan.reservation.index');
     Route::get('/reservasi/{id}', [ReservasiController::class, 'show'])->name('pelanggan.reservation.show');
     Route::get('/pelanggan/reservation/transaction/{id}', [ReservasiController::class, 'transaction'])->name('pelanggan.reservation.transaction');
-    Route::get('/pelanggan/reservasi/payment/{id}', [ReservasiController::class, 'pay'])
-        ->name('pelanggan.reservation.payment');
+    Route::get('/pelanggan/reservasi/payment/{id}', [ReservasiController::class, 'pay'])->name('pelanggan.reservation.payment');
+    Route::get('/pelanggan/reservasi/invoice/{id}', [ReservasiController::class, 'invoice'])->name('pelanggan.invoice');
 });
 
 Route::middleware(['auth']) -> group(function() {

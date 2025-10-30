@@ -5,11 +5,12 @@ namespace App\Http\Controllers\Pelanggan;
 use App\Http\Controllers\Controller;
 use App\Models\Admin\BusType;
 use App\Models\Reservation;
+use Carbon\Carbon;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Midtrans\Config;
 use Midtrans\Snap;
-use Illuminate\Support\Facades\Auth;
-use \Carbon\Carbon;
+use Midtrans\Transaction;
 
 class ReservasiController extends Controller
 {
@@ -24,7 +25,8 @@ class ReservasiController extends Controller
     {
         $bus = BusType::all();
         $user = Auth::user();
-        return view('pelanggan.reservation.create', compact('bus','user'));
+
+        return view('pelanggan.reservation.create', compact('bus', 'user'));
     }
 
     public function store(Request $request)
@@ -36,22 +38,20 @@ class ReservasiController extends Controller
             'alamat' => 'required|string|max:255',
             'tujuan' => 'required|string|max:100',
             'number_of_seats' => 'required|integer|min:1',
-            'bus_id' => 'required|exists:bus_type,id', // ini untuk menentukan bus
+            'bus_id' => 'required|exists:bus_type,id',
         ]);
-        $bus = BusType::findOrFail($validated['bus_id']);
-        $total_harga = $bus->price * $validated['number_of_seats'];
-        
-        $validated['payment'] = $total_harga;
-        $validated['schedule_id'] = rand(1,100);
 
-        // $start = Carbon::parse($request->tanggal_berangkat);
-        // $end = Carbon::parse($request->tanggal_pulang);
-        // $validated['reservation_duration'] = $start->diffInDays($end) + 1;
-        // $reservation->reservation_duration = $start->diffInDays($end) + 1;
+        $start = Carbon::parse($request->tanggal_berangkat);
+        $end = Carbon::parse($request->tanggal_pulang);
+        $lama_hari = $start->diffInDays($end) + 1;
+
+        $bus = BusType::findOrFail($validated['bus_id']);
+        $total_harga = $bus->price * $lama_hari;
+
+        $validated['payment'] = $total_harga;
+        $validated['schedule_id'] = rand(1, 100);
 
         $validated['payment_status'] = 'pending';
-
-        
 
         $reservation = Reservation::create($validated);
 
@@ -83,7 +83,7 @@ class ReservasiController extends Controller
 
         $params = [
             'transaction_details' => [
-                'order_id' => 'RESV-'.$reservation->id.'-'.time(),
+                'order_id' => 'RESV-'.$reservation->id.'-'.$reservation->reservation_code,
                 'gross_amount' => $reservation->payment,
             ],
             'customer_details' => [
@@ -96,5 +96,60 @@ class ReservasiController extends Controller
         $snapToken = Snap::getSnapToken($params);
 
         return view('pelanggan.payment', compact('reservation', 'snapToken'));
+    }
+
+    public function invoice($id)
+    {
+        $reservation = Reservation::findOrFail($id);
+        if ($reservation->set_payment_status === 'canceled' ) {
+            return view('pelanggan.invoice', compact('reservation'));
+        }
+        Config::$serverKey = config('mitrands.server_key');
+        Config::$isProduction = config('mitrands.is_production', false);
+        Config::$isSanitized = true;
+
+        try {
+            $status = Transaction::status('RESV-'.$reservation->id.'-'.$reservation->reservation_code);
+
+            $transactionStatus = $status->transaction_status;
+            $paymentType = $status->payment_type;
+
+            $paymentMethod = strtoupper($paymentType);
+
+            if ($paymentType === 'bank_transfer' && isset($status->va_numbers[0]->bank)) {
+                $paymentMethod = strtoupper($status->va_numbers[0]->bank);
+            }
+
+            if ($paymentType === 'echannel') {
+                $paymentMethod = 'MANDIRI BILL PAYMENT';
+            }
+
+            if ($paymentType === 'qris') {
+                $paymentMethod = 'QRIS';
+            }
+
+            if ($paymentType === 'gopay') {
+                $paymentMethod = 'GOPAY';
+            }
+
+            if (in_array($transactionStatus, ['capture', 'settlement'])) {
+                $reservation->payment_status = 'paid';
+                $reservation->set_payment_method = $paymentMethod;
+                $reservation->payment_date = Carbon::now();
+            } elseif ($transactionStatus === 'pending') {
+                $reservation->payment_status = 'pending';
+                $reservation->set_payment_method = $paymentMethod;
+            } elseif (in_array($transactionStatus, ['deny', 'cancel', 'expire'])) {
+                $reservation->payment_status = 'failed';
+                $reservation->status = 'failed';
+                $reservation->set_payment_method = $paymentMethod;
+            }
+
+            $reservation->save();
+        } catch (Exception $e) {
+            Log::error('Midtrans status error: '.$e->getMessage());
+        }
+
+        return view('pelanggan.invoice', compact('reservation'));
     }
 }
